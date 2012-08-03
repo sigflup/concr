@@ -1,0 +1,59 @@
+
+INSTALL=./install.sh
+
+CC=@CC@
+
+CFLAGS = @CFLAGS@ @DEFS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+PREFIX= @PREFIX@
+MAN_PREFIX=@MAN_PREFIX@
+
+AR = ar
+RANLIB= ranlib
+
+OBJS=concr_getkey.o concr_decrypt.o method.o base64.o fifo.o
+OBJS_EXAMPLE=example.o method.o
+OBJS_CONFCRYPT=confcrypt.o base64.o
+
+all: confcrypt libconcr.a
+	@echo "all is well"
+
+example: ${OBJS_EXAMPLE}
+	${CC} -o example ${LDFLAGS} ${OBJS_EXAMPLE} ${LIBS} -lconcr
+
+confcrypt: ${OBJS_CONFCRYPT} 
+	${CC} -o confcrypt ${LDFLAGS} ${OBJS_CONFCRYPT} ${LIBS}
+
+%.o: %.c
+	${CC} -c ${CFLAGS} -o $@ $<
+
+libconcr.a: ${OBJS}
+	${AR} -q -v libconcr.a ${OBJS}
+	${RANLIB} libconcr.a
+	
+install: confcrypt libconcr.a install_man
+	${INSTALL} -c -m 750 confcrypt ${PREFIX}/bin
+	-mkdir -m 755 ${PREFIX}/include/concr/ 2> /dev/null
+	-mkdir -m 755 /var/db/confcrypt 2 > /dev/null
+	${INSTALL} -c -m 755 concr.h ${PREFIX}/include/concr
+	${INSTALL} -c -m 755 method.h ${PREFIX}/include/concr
+	${INSTALL} -c -m 755 libconcr.a ${PREFIX}/lib 
+
+install_man: decrypt.3 confcrypt.1 getkey.3
+	-mkdir -m 755 ${MAN_PREFIX}/man1 2>/dev/null
+	-mkdir -m 755 ${MAN_PREFIX}/man3 2>/dev/null
+	${INSTALL} -c -m 750 decrypt.3 ${MAN_PREFIX}/man3/concr_rd.3
+	${INSTALL} -c -m 750 decrypt.3 ${MAN_PREFIX}/man3/concr_eof.3
+	${INSTALL} -c -m 750 decrypt.3 ${MAN_PREFIX}/man3/decode_init.3
+	${INSTALL} -c -m 750 getkey.3 ${MAN_PREFIX}/man3/concr_getkey.3
+	${INSTALL} -c -m 750 getkey.3 ${MAN_PREFIX}/man3/concr_guessname.3
+	${INSTALL} -c -m 750 confcrypt.1 ${MAN_PREFIX}/man1/confcrypt.1	
+
+clean:
+	rm -f ${OBJS} ${OBJS_CONFCRYPT}  ac_test.c ac_test ac_test.core \
+	 example example.core confcrypt confcrypt.core baby public.key \
+	  example.o example libconcr.a
+
+distclean:
+	rm -rf autom4te.cache Makefile config.h config.log config.status aclocal.m4

@@ -1,0 +1,3 @@
+in farm,mips rsa.h and openssl headers not where you think they are
+
+finish root check, concr_getkey.c XXX

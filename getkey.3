@@ -1,0 +1,138 @@
+.TH "CONCR" "3" "Dec 19 2011" "concr" "concr API Reference"
+.SH NAME
+\fBconcr_getkey\fP, \fBconcr_guessname\fP \- establish concr encryption key 
+.SH SYNOPSIS
+#include <concr/concr.h>
+
+void *\fBconcr_getkey\fP(gen_key_meth *method, char *hint);
+
+char *\fBconcr_guessname\fP(char *argv_0);
+
+.SH DESCRIPTION
+\fBconcr_getkey\fP and \fBconcr_guessname\fP are the two functions used to establish a key for the concr encryption framework. Your application is to link with
+-lconcr and -lcrypto
+
+\fBconcr_getkey\fP finds your running application's encryption key or 
+generates it, if no key is found, using the callbacks defined in method for 
+displaying information about the generation process and for file io. 
+concr_getkey needs to know the location of your running application's binary in order to produce a new-copy containing a key. hint is a hint as to the name of 
+the binary. if method is NULL default callbacks will be used printing 
+generation information to stdout and file io will use standard methods.
+
+\fBconcr_guessname\fP tries to guess the location of your running application's
+binary and is typically given argv[0] from your running application's main 
+call-stack.
+
+the method structure looks like this:
+
+.nf
+typedef struct {
+	char *(*\fBrehint\fP) (void *user, char *hint);
+	void *(*\fBstart\fP) (char *hint, char **baby_name, char **elf_name, char **key_name);
+	void (*\fBsetup_progress\fP) (void);
+	void (*\fBgen_progress\fP) (int a, int b, void *user);
+	void (*\fBend_progress\fP) (void *user);
+	void (*\fBpublic_key_out\fP) (unsigned char *data, int len, void *user);
+	void (*\fBfinish\fP) (void *user);
+	void *(*\fBopen_elf\fP) (char *hint, void *user, unsigned int *size);
+	void *(*\fBopen_baby\fP) (char *hint, void *user);
+	int  (*\fBread\fP) (void *store, int len, void *io_user, void *user);
+	int  (*\fBwrite\fP) (void *store, int len, void *io_user, void *user);
+	int  (*\fBseek\fP) (unsigned int pos, void *io_user, void *user);
+	int  (*\fBclose\fP) (void *io_user, void *user);
+	int  (*\fBchmod\fP) (void *io_user, void *user, mode_t mod);
+	void (*\fBerror\fP) (void *user, char *format,...);
+	char *(*\fBprompt_new_binary\fP) (void *user);
+} gen_key_meth;
+.fi
+
+\fBrehint\fP is called for application defined hint values. user is user defined
+and is not used by concr (see \fBstart\fP). hint is the actual hint string 
+given to \fBconcr_getkey\fP. rehint must return a binary path string
+
+\fBstart\fP is called at the beginning of the key generation process and returns a
+user defined pointer for use as the user argument in later method callbacks.
+
+\fBgen_progress\fP is called to update what progress in key generation has been 
+made. user is user defined and is not used by concr (see \fBstart\fP). When the 
+n-th randomly generated prime is rejected as a suitable key a is 2 and
+b is n. When a key has been generated a is 3 and b is 0. This is copies the
+behavior of the callback RSA_generate_key uses
+
+\fBend_progress\fP is called at the end of the key-generation process. user is
+user defined and is not used by concr (see \fBstart\fP).
+
+\fBpublic_key_out\fP is called to output the public key. user is user defined
+and is not used by concr (see \fBstart\fP). data is a pointer to the key-text 
+and 
+size is a pointer to it's size. 
+
+\fBopen_elf\fP is called to open the input binary. user is user defined and
+is not used by concr (see \fBstart\fP). hint is the location of the binary and 
+size
+is a pointer where the returned size should be stored. \fBopen_elf\fP should
+return a user-defined pointer for use in later io-operations as the argument
+io_user.
+if an error has occured \fBopen_elf\fP should return -1
+
+\fBopen_baby\fP is called to open the output binary. 
+user is user defined and is not used by concr (see \fBstart\fP). 
+hint is the name of the binary. 
+\fBopen_baby\fP should return a user-defined pointer for use in later 
+io-operations as the argument io_user. 
+if an error has occured \fBopen_baby\fP should return -1
+
+\fBread\fP is called to read data in from file-io. Data should be stored in
+store and len bytes should be attempted to be read.
+io_user and user are user defined and not used by concr (see \fBopen_elf\fP or 
+\fBopen_baby\fP and \fBstart\fP).
+\fBread\fP should return the actual number of bytes read. 
+if an error has occured \fBread\fP should return -1
+
+\fBwrite\fP is called to write data to file-io. Data to be written is stored
+in store and len bytes should be attempted to be written.
+io_user and user are user defined and not used by concr (see \fBopen_elf\fP or 
+\fBopen_baby\fP and \fBstart\fP).
+\fBwrite\fP should return the actual number of bytes written.
+if an error has occured \fBwrite\fP should return -1
+
+\fBseek\fP is called to seek an absolute position in file_io. pos is the 
+position to seek to.  
+io_user and user are user defined and not used by concr (see \fBopen_elf\fP or 
+\fBopen_baby\fP and \fBstart\fP).
+if an error has occured \fBseek\fP should return -1
+
+\fBclose\fP is called to close a file-io operation. 
+io_user and user are user defined and not used by concr (see \fBopen_elf\fP or 
+\fBopen_baby\fP and \fBstart\fP).
+if an error has occured \fBclose\fP should return -1
+
+\fBchmod\fP is called to change the permissions of a file-io operation. 
+mod is the mode to be changed to.
+io_user and user are user defined and not used by concr (see \fBopen_elf\fP or 
+\fBopen_baby\fP and \fBstart\fP).
+if an error has occured \fBchmod\fP should return -1
+
+\fBerror\fP is called to do error-reporting. 
+user is user defined and is not used by concr (see \fBstart\fP). 
+format is the format string to be outputted and error will be called with a 
+variable number of arguments to match the format string. \fBerror\fP
+copies the functionality of printf
+
+\fBprompt_new_binary\fP is called when concr cannot determine the location
+of running application's binary. 
+user is user defined and is not used by concr (see \fBstart\fP). 
+\fBprompt_new_binary\fP should return the location of the running application's
+binary
+
+.SH RETURN VALUES
+
+\fBconcr_getkey\fP returns a pointer to the key found. external variable
+working_key must be set to this return value in order to use \fBconcr_rd\fP
+or \fBconcr_eof\fP
+
+\fBconcr_guessname\fP returns a hint string for use in \fBconcr_getkey\fP's 
+hint argument.
+
+.SH SEE ALSO
+\fBconcr_rd\fP, \fBconcr_eof\fP, \fBdecode_init\fP

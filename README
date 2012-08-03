@@ -1,0 +1,40 @@
+Hello everybody!! This is an encryption framework for making partially
+encrypted configuration files called concr.
+
+INSTALLATION:
+
+in the directory that you extracted concr run these commands:
+
+$ ./configure
+$ make
+$ sudo make install
+
+and that's it!!!
+
+look at the confcrypt man-page for information as a user. Look at 
+the libconcr man-page for information as a developer.
+
+$ man confcrypt
+$ man concr_rd
+$ man concr_getkey
+
+if you like you can run these commands if you want to read the manual
+before installing
+
+if you're on a bsd:
+
+$ mandoc confcrypt.1 
+$ mandoc decrypt.3 
+$ mandoc getkey.3
+
+if you're on linux:
+
+$ man -l confcrypt.1 
+$ man -l decrypt.3 
+$ man -l getkey.3
+
+This is maintained by sigflup and if you have any questions comments patches
+or free icecream sandwiches email pantsbutt@gmail.com 
+
+l8r,
+ sigflup

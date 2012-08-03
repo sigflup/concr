@@ -1,0 +1,145 @@
+ 
+AC_REVISION($Revision: 1 $)
+AC_INIT(concr,dec_19_2011)
+
+
+VERSION=dec_19_2011
+
+AC_DEFUN(AC_PROGRAM_SOURCE,
+[AC_REQUIRE([AC_PROG_CPP])AC_PROVIDE([$0])cat > conftest.c <<EOF
+#include "confdefs.h"
+[$1]
+_CUT_HERE_
+[$2]
+EOF
+eval "$ac_cpp conftest.c 2>&5 | sed -e '1,/_CUT_HERE_/d' -e 's/ //g' > conftest.out"
+. ./conftest.out
+rm -f conftest*
+])dnl
+dnl
+define(AC_NOTE,
+[echo "$1" 1>&AC_FD_MSG
+])dnl
+
+
+AC_SUBST(VERSION)
+AC_PREFIX_PROGRAM(concr)
+AC_PREFIX_PROGRAM(gzip)
+
+old_CFLAGS="$CFLAGS"
+AC_PROG_CC
+CFLAGS=" "
+AC_PROG_CPP
+AC_PROG_GCC_TRADITIONAL
+AC_ISC_POSIX
+
+AC_TRY_RUN(main(){exit(0);},,[
+if test $CC != cc ; then
+CC=cc
+export CC
+exec $0 $configure_args
+fi
+])
+
+AC_TRY_RUN(main(){exit(0);},,
+exec 5>&2
+eval $ac_link
+AC_NOTE(CC=$CC; CFLAGS=$CFLAGS; LIBS=$LIBS;)
+AC_NOTE($ac_compile)
+AC_MSG_ERROR(Can't run the compiler - sorry))
+
+AC_TRY_RUN([
+main()
+{
+  int __something_strange_();
+  __something_strange_(0);
+}
+],AC_MSG_ERROR(Your compiler does not set the exit status - sorry))
+
+AC_PROG_INSTALL
+
+if test -f etc/toolcheck; then
+AC_CHECKING(for buggy tools)
+sh etc/toolcheck 1>&AC_FD_MSG
+fi
+
+
+AC_HEADER_DIRENT
+
+AC_TRY_RUN(main(){exit(0);},,AC_MSG_ERROR(Can't run the compiler - internal error. Sorry.))
+
+AC_CHECK_PROG([HAVEAR], [ar], "true", "false") 
+if test "$HAVEAR" = "false"; then
+ echo "cannot run ar, usually this comes with the compiler package"
+ exit;
+fi
+
+AC_CHECK_PROG([HAVERANLIB], [ranlib], "true", "false") 
+if test "$HAVERANLIB" = "false"; then
+ echo "cannot run ranlib, usually this comes with the compiler package"
+ exit;
+fi
+
+if test "$prefix" = "/"; then
+ PREFIX=/usr/
+else
+ PREFIX=$prefix
+fi
+
+AC_SUBST(PREFIX)
+
+HRR_CHECK_HEAD(rsa.h,  openssl/, [ cannot find rsa.h which is a part of openssl])
+HRR_CHECK_HEAD(bio.h,  openssl/, [ cannot find bio.h which is a part of openssl])
+HRR_CHECK_HEAD(pem.h,  openssl/, [ cannot find pem.h which is a part of openssl])
+HRR_CHECK_HEAD(engine.h,  openssl/, [ cannot find engine.h which is a part of openssl])
+
+HRR_CHECK_LIB(crypto,BIO_new)
+
+echo -n "checking void pointer size..."
+
+
+AC_TRY_RUN(
+int main(void) {
+ if(sizeof(void *) == 8)
+  return 0;
+ else
+  return -1;
+ return 0;
+}
+,CFLAGS=$CFLAGS\ -DIS64BIT; echo "64bit",echo "32bit")
+
+
+echo -n "checking for d_namlen..."
+
+rm -f ac_test.c
+cat >> ac_test.c <<_ACEOF
+#include <dirent.h>
+int main(void) {
+ struct dirent dp;
+ dp.d_namlen = 1337;
+ return 1;
+}
+_ACEOF
+${CC} -o ac_test ac_test.c  1>>/dev/null 2>>/dev/null
+
+if  test ! -e ac_test ; then 
+ AC_DEFINE(NONAMLEN) 
+ echo "nope"
+else
+ echo "found"
+fi
+
+
+# XXX static for now
+MAN_PREFIX=/usr/local/man
+
+AC_SUBST(MAN_PREFIX)
+
+dnl 
+dnl *** wow, hope all that worked 
+dnl
+
+CFLAGS=$CFLAGS\ -Wall
+
+AC_OUTPUT(Makefile)
+

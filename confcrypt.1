@@ -1,0 +1,32 @@
+.TH "CONCR" 1 "Dec 2011" "concr" "concr User Reference"
+.SH NAME
+\fBconfcrypt\fP \- encrypt message
+.SH SYNOPSIS
+\fBconfcrypt\fP -key <file> [-in <file>] [-out <file>]
+.fi
+.SH DESCRIPTION
+\fBconfcrypt\fP is a tool for generating encrypted configuration files. It outputs
+to privacy-enhanced-mail format and the entire configuration file does not
+need to be encrypted. You can have multiple encrypted portions in a 
+configuration file in addition to having the entire configuration file
+encrypted. Public keys are provided by the program reading the configuration
+file and is typically stored in a default global key-ring (\fB/var/db/confcrypt/\fR) 
+.PP
+if \fBCONFCRYPT_KEYRING\fP is defined \fBconfcrypt\fP will search this key-ring path 
+instead of it's default
+.TP
+\fB\-key\fR \fB<key_file>\fR
+This option is mandatory. This specifies what file to read the public key from, which is later used during the encryption process. if the key-file is not found \fB/var/db/confcrypt/\fR will be searched.
+.TP
+\fB-ring\fR \fB<path>\fR
+This changes the keyring search path from it's default to the specified path
+.TP
+\fB-in\fR \fB<file>\fR
+This specifies what file to encrypt. This is optional and if omitted \fBconfcrypt\fR will use standard in instead
+.TP
+\fB-out\fR \fB<file>\fR
+This specifies where to write the cipher-text. This is optional, if omitted \fBconfcrypt\fR will use standard out instead
+.SH FILES
+\fB/var/db/confcrypt/\fR
+.SH SEE ALSO
+\fBconcr_rd\fP, \fBconcr_eof\fP, \fBdecode_init\fP, \fBconcr_getkey\fP, \fBconcr_guessname\fP

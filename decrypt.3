@@ -1,0 +1,109 @@
+.TH "CONCR" "3" "Dec 19 2011" "concr" "concr API Reference"
+.SH NAME
+\fBconcr_rd\fP, \fBconcr_eof\fP, \fBdecode_init\fP \- read partially encrypted files 
+.SH SYNOPSIS
+#include <concr/concr.h>
+
+int \fBconcr_rd\fP(char *buf, int len)
+
+int \fBconcr_eof\fP(void)
+
+void \fBdecode_init\fP(void)
+
+.SH DESCRIPTION
+\fBconcr_rd\fP, \fBconcr_eof\fP, \fBdecode_init\fP are the three functions
+used do decrypt a partially encrypted file using the concr encryption 
+framework. Your application is to link with -lconcr and -lcrypto
+
+\fBconcr_rd\fP reads an arbitrary number of input characters from concr's 
+input as specified by len and stores what it reads in buf. \fBconcr_rd\fP blocks until io is reached
+
+\fBconcr_eof\fP checks of the end-of-file marker of concr's input.
+
+\fBdecode_init\fP initialized concr's state and should always be called after
+opening an input file and before calling \fBconcr_rd\fP.
+
+concr gets it's input from callback functions \fBconcr_decrypt_input\fP
+and \fBconcr_decrypt_eof\fP and does error-reporting through callback 
+function \fBdecrypt_error\fP. 
+
+.SH RETURN VALUES
+\fBconcr_rd\fP return an integer indicating the number of
+bytes stored to buf. -1 is returned if concr's input has reached it's end and
+eof marker is set. concr_rd will continue even if errors occur
+
+\fBconcr_eof\fP returns true if input is drained and reached it's end, 
+otherwise \fBconcr_eof\fP returns false
+
+.SH CALLBACK SYNOPSIS
+extern int (*\fBconcr_decrypt_input\fP)(char *in, int len);
+
+extern int (*\fBconcr_decrypt_eof\fP)(void);
+
+extern void (*\fBdecrypt_error\fP)(char *in);
+
+.SH CALLBACK DESCRIPTION
+You must set \fBconcr_decrypt_input\fP and \fBconcr_decrypt_eof\fP to use 
+concr. If \fBconcr_error\fP is not set concr will use stderr for error 
+reporting.
+
+\fBconcr_decrypt_input\fP must try to read the number of characters specified
+by len from your input and store what is read into in.
+
+\fBconcr_decrypt_eof\fP must check eof of your input 
+
+\fBconcr_error\fP should be use for error reporting. in is the error string
+caused by \fBconcr_rd\fP. \fBconcr_rd\fP will not return on error. Typically
+errors are only cause by malformed input or when using a wrong decryption key
+
+.SH CALLBACKS RETURN VALUES
+\fBconcr_decrypt_input\fP must return the actual number of bytes read from
+your input
+
+\fBconcr_decrypt_eof\fP must return true when the end of your input is
+reached and false if it is not yet reached
+
+.SH EXAMPLES
+This is the minimal usage of concr. This program takes standard in and decrypts
+it to standard out
+
+.nf
+#include <stdio.h>
+#include <concr/concr.h>
+
+int 
+example_decrypt_input(char *in, int len)
+{
+	return fread(in, 1, len, stdin);
+}
+
+int 
+example_decrypt_eof(void)
+{
+	return feof(stdin);
+}
+
+int 
+main(int argc, char **argv)
+{
+	int             l;
+	char            dat;
+	if (argc == 0)
+		return 0;
+	working_key = concr_getkey(NULL, concr_guessname(argv[0]));
+
+	concr_decrypt_input = example_decrypt_input;
+	concr_decrypt_eof = example_decrypt_eof;
+
+	decode_init();
+
+	while ((l = concr_rd(&dat, 1)) != -1)
+		if (l == 1)
+			putchar(dat);
+
+	return 1;
+}
+.fi
+
+.SH SEE ALSO
+\fBconcr_getkey\fP, \fBconcr_guessname\fP
